@@ -180,48 +180,27 @@ function pivot(word){
     // Longer words are "right-weighted" for easier readability.
     if(length<6){
 
-        var bit = 1;
-        while(word.length < 22){
-            if(bit > 0){
-                word = word + '.';
-            }
-            else{
-                word = '.' + word;
-            }
-            bit = bit * -1;
-        }
-
-        var start = '';
-        var end = '';
-        start = decodeEntities(word.slice(0, word.length/2));
-        end = decodeEntities(word.slice(word.length/2, word.length));
-
-        var result;
-        result = "<span class='spritz_start'>" + start.slice(0, start.length -1);
-        result = result + "</span><span class='spritz_pivot'>";
-        result = result + start.slice(start.length-1, start.length);
-        result = result + "</span><span class='spritz_end'>";
-        result = result + end;
-        result = result + "</span>";
+        var padSize = (22-word.length)/2;
+        word = '.'.repeat(padSize) + word + '.'.repeat(padSize) + (Math.abs(padSize-parseInt(padSize)) > 0 ? '.' : '');
     }
 
     else{
 
         var tail = 22 - (word.length + 7);
-        word = '.......' + word + ('.'.repeat(tail));
-
-        var start = decodeEntities(word.slice(0, word.length/2));
-        var end = decodeEntities(word.slice(word.length/2, word.length));
-
-        var result;
-        result = "<span class='spritz_start'>" + start.slice(0, start.length -1);
-        result = result + "</span><span class='spritz_pivot'>";
-        result = result + start.slice(start.length-1, start.length);
-        result = result + "</span><span class='spritz_end'>";
-        result = result + end;
-        result = result + "</span>";
+        word = '.......' + word + ('.'.repeat(tail > 0 ? tail : -tail));
 
     }
+
+    var start = decodeEntities(word.slice(0, word.length/2));
+    var end = decodeEntities(word.slice(word.length/2, word.length));
+
+    var result;
+    result = "<span class='spritz_start'>" + start.slice(0, start.length -1);
+    result = result + "</span><span class='spritz_pivot'>";
+    result = result + start.slice(start.length-1, start.length);
+    result = result + "</span><span class='spritz_end'>";
+    result = result + end;
+    result = result + "</span>";
 
     result = result.replace(/\./g, "<span class='invisible'>.</span>");
 
@@ -305,14 +284,29 @@ function clearTimeouts(){
     }
 }
 
-// Let strings repeat themselves,
-// because JavaScript isn't as awesome as Python.
-String.prototype.repeat = function( num ){
-    if(num < 1){
-        return new Array( Math.abs(num) + 1 ).join( this );
-    }
-    return new Array( num + 1 ).join( this );
-};
+(function(repeatFunction){
+    // String repeat function already exists, so return
+    if(repeatFunction) return;
+    
+    // Let strings repeat themselves,
+    // because JavaScript isn't as awesome as Python.
+    String.prototype.repeat = function( num ){
+        
+        // Implementation based on ECMA 6 Draft
+        num = (+num > 0 ? 1 : -1) * Math.floor(Math.abs(num));
+        if(isNaN(num)) num = 0;
+        if(!isFinite(num) || num < 0) throw new RangeError();
+        var res = '', str = this.toString();
+        while (num > 0) {
+            if (num & 1) {
+                res += str;
+            }
+            num >>>= 1;
+            str += str;
+        }
+        return res;
+    };
+}(String.prototype.repeat));
 
 function decodeEntities(s){
     var str, temp= document.createElement('p');
